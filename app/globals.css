@@ -89,11 +89,11 @@ body {
 
 @media (min-width: 1024px) {
   .app-shell {
-    max-width: 520px;
-    border-radius: var(--radius-lg);
-    margin-top: 20px;
-    margin-bottom: 20px;
-    min-height: calc(100vh - 40px);
+    max-width: 100%;
+    border-radius: 0;
+    margin: 0;
+    min-height: 100vh;
+    box-shadow: none;
   }
 }
 
@@ -124,6 +124,25 @@ body {
   min-height: calc(100vh - 160px);
 }
 
+@media (min-width: 1024px) {
+  .app-header {
+    margin-left: 220px;
+    padding: 24px 32px 20px;
+  }
+
+  .app-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .page-content {
+    margin-left: 220px;
+    padding: 28px 32px;
+    padding-bottom: 32px;
+    flex: 1;
+    max-width: 960px;
+  }
+}
+
 /* ── Tab Bar ── */
 .tab-bar {
   position: fixed;
@@ -151,8 +170,21 @@ body {
 
 @media (min-width: 1024px) {
   .tab-bar {
-    max-width: 520px;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 220px;
+    max-width: 220px;
+    transform: none;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 24px 12px;
+    border-top: none;
+    border-right: 1px solid var(--gray-200);
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.97);
   }
 }
 
@@ -201,6 +233,36 @@ body {
 
 .tab-item.active svg {
   transform: scale(1.1);
+}
+
+@media (min-width: 1024px) {
+  .tab-item {
+    flex-direction: row;
+    gap: 10px;
+    padding: 12px 16px;
+    font-size: 0.82rem;
+    border-radius: var(--radius-sm);
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .tab-item:hover {
+    background: var(--blue-50);
+  }
+
+  .tab-item.active {
+    background: linear-gradient(135deg, var(--blue-50) 0%, #E0F2F1 100%);
+    color: var(--blue-600);
+  }
+
+  .tab-item.active::after {
+    display: none;
+  }
+
+  .tab-item svg {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 /* ── Cards ── */
@@ -459,6 +521,12 @@ body {
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+@media (min-width: 1024px) {
+  .modal-content {
+    max-width: 640px;
+  }
+}
+
 .modal-header {
   padding: 20px 20px 0;
 }
@@ -527,6 +595,12 @@ body {
   min-height: calc(100vh - 220px);
 }
 
+@media (min-width: 1024px) {
+  .conv-list-container {
+    min-height: auto;
+  }
+}
+
 .conv-list-header {
   display: flex;
   align-items: center;
@@ -581,6 +655,14 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+@media (min-width: 1024px) {
+  .conv-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
 }
 
 .conv-card {
@@ -688,6 +770,13 @@ body {
   max-height: 600px;
 }
 
+@media (min-width: 1024px) {
+  .chat-container {
+    max-height: 80vh;
+    height: calc(100vh - 180px);
+  }
+}
+
 .chat-header {
   display: flex;
   align-items: center;
@@ -764,6 +853,14 @@ body {
   line-height: 1.55;
   animation: fadeInUp 0.3s ease-out;
   position: relative;
+}
+
+@media (min-width: 1024px) {
+  .chat-bubble {
+    max-width: 65%;
+    padding: 14px 20px;
+    font-size: 0.88rem;
+  }
 }
 
 .chat-bubble.user {
