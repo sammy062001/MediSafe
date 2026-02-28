@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiLimiter } from "@/lib/rate-limit";
+import { extractLimiter } from "@/lib/rate-limit";
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
 
@@ -108,7 +108,7 @@ function sanitizeText(text: string): string {
 export async function POST(request: NextRequest) {
     try {
         const ip = request.headers.get("x-forwarded-for") || "anonymous";
-        const { success } = apiLimiter.check(5, ip);
+        const { success } = extractLimiter.check(30, ip);
         if (!success) {
             return NextResponse.json(
                 { error: "Rate limit exceeded. Please try again in a minute." },
@@ -131,26 +131,42 @@ export async function POST(request: NextRequest) {
 
         const userPrompt = "Below is raw OCR text extracted from a medical document.\n\nRAW OCR TEXT:\n\"\"\"\n" + rawText + "\n\"\"\"";
 
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": "Bearer " + GROQ_API_KEY,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
-                messages: [
-                    { role: "system", content: SYSTEM_PROMPT },
-                    { role: "user", content: userPrompt },
-                ],
-                temperature: 0,
-                max_tokens: 3000,
-            }),
+        const groqBody = JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [
+                { role: "system", content: SYSTEM_PROMPT },
+                { role: "user", content: userPrompt },
+            ],
+            temperature: 0,
+            max_tokens: 3000,
         });
 
-        if (!response.ok) {
-            console.error("Groq error status:", response.status);
-            if (response.status === 429) {
+        // Retry with exponential backoff for transient Groq errors
+        let response: Response | null = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": "Bearer " + GROQ_API_KEY,
+                    "Content-Type": "application/json",
+                },
+                body: groqBody,
+            });
+
+            if (response.ok) break;
+
+            console.error(`Groq error (attempt ${attempt + 1}/3): status ${response.status}`);
+
+            // Don't retry on client errors (except 429)
+            if (response.status < 500 && response.status !== 429) break;
+
+            // Wait before retrying: 1s, 2s
+            if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        }
+
+        if (!response || !response.ok) {
+            const status = response?.status ?? 500;
+            if (status === 429) {
                 return NextResponse.json(
                     { error: "AI model rate limit reached. Please wait a minute and try again." },
                     { status: 429 }

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import dynamic from "next/dynamic";
+import { track } from "@vercel/analytics";
 import TabBar from "@/components/TabBar";
 import { getProfile, saveProfile } from "@/lib/db";
 import type { TabId, Profile } from "@/lib/types";
@@ -80,7 +81,7 @@ export default function Home() {
         {activeTab === "ask-ai" && <AskAI />}
       </main>
 
-      <TabBar activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setRefreshKey((k) => k + 1); }} />
+      <TabBar activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); track("tab_switched", { tab }); setRefreshKey((k) => k + 1); }} />
     </div>
   );
 }

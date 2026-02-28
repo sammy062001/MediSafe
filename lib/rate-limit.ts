@@ -31,8 +31,13 @@ export function rateLimit(options: RateLimitOptions) {
     };
 }
 
-// Shared limiter: 5 requests per minute per IP
-export const apiLimiter = rateLimit({
+// Separate limiters per route — 30 requests per minute per IP
+export const extractLimiter = rateLimit({
+    interval: 60_000,
+    uniqueTokenPerInterval: 500,
+});
+
+export const chatLimiter = rateLimit({
     interval: 60_000,
     uniqueTokenPerInterval: 500,
 });

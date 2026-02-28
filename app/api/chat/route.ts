@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiLimiter } from "@/lib/rate-limit";
+import { chatLimiter } from "@/lib/rate-limit";
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
 
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     try {
         // Rate limit
         const ip = request.headers.get("x-forwarded-for") || "anonymous";
-        const { success } = apiLimiter.check(5, ip);
+        const { success } = chatLimiter.check(30, ip);
         if (!success) {
             return NextResponse.json(
                 { error: "Rate limit exceeded. Please try again in a minute." },
@@ -127,23 +127,39 @@ export async function POST(request: NextRequest) {
         // Add current question
         messages.push({ role: "user", content: question });
 
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${GROQ_API_KEY}`,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
-                messages,
-                temperature: 0.7,
-                max_tokens: 2048,
-            }),
+        const groqBody = JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages,
+            temperature: 0.7,
+            max_tokens: 2048,
         });
 
-        if (!response.ok) {
-            console.error("Groq error status:", response.status);
-            if (response.status === 429) {
+        // Retry with exponential backoff for transient Groq errors
+        let response: Response | null = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${GROQ_API_KEY}`,
+                    "Content-Type": "application/json",
+                },
+                body: groqBody,
+            });
+
+            if (response.ok) break;
+
+            console.error(`Groq error (attempt ${attempt + 1}/3): status ${response.status}`);
+
+            // Don't retry on client errors (except 429)
+            if (response.status < 500 && response.status !== 429) break;
+
+            // Wait before retrying: 1s, 2s
+            if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        }
+
+        if (!response || !response.ok) {
+            const status = response?.status ?? 500;
+            if (status === 429) {
                 return NextResponse.json({
                     reply: "⏳ Rate-limited by Groq. Please wait a moment and try again.",
                 });

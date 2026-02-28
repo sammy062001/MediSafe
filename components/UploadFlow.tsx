@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import axios from "axios";
+import { track } from "@vercel/analytics";
 import { v4 as uuidv4 } from "uuid";
 import { saveDocument } from "@/lib/db";
 import type { MediDocument, ExtractedData } from "@/lib/types";
@@ -207,6 +208,7 @@ export default function UploadFlow({ onClose, onDocumentSaved }: UploadFlowProps
             extracted: editedData,
         };
         await saveDocument(doc);
+        track("document_uploaded", { type: editedData.document_type });
         const newSaved = savedCount + 1;
         setSavedCount(newSaved);
         onDocumentSaved();

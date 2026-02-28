@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import axios from "axios";
+import { track } from "@vercel/analytics";
 import { v4 as uuidv4 } from "uuid";
 import { getProfile } from "@/lib/db";
 import { buildHealthSnapshot } from "@/lib/health-snapshot";
@@ -162,6 +163,7 @@ export default function AskAI() {
             };
 
             setActiveConv(finalConv);
+            track("chat_message_sent");
             await saveConversation(finalConv);
             setConversations((prev) => {
                 const filtered = prev.filter((c) => c.id !== finalConv.id);
